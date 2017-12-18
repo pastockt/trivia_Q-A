@@ -4,11 +4,13 @@ import sys
 import string
 import requests
 import re
+import time
 
 base_url = "http://www.google.com/search?"
 query = "q="
 quote_query = "as_epq="
 not_query = "as_eq="
+
 
 # Return number of search results as int
 # arg: search_result_html = html result from GET of google search
@@ -48,8 +50,67 @@ def GoogleSearchInQuotes(string):
     query_arg = string.replace(" ", "+")
     return requests.get(base_url + quote_query + query_arg).text
 
+# returns array of search result counts for the 3 question/answer combos
+# arg: question, answer1, answer2, answer3 are all strings
+def CountQuestionAnswerResults(question, answer1, answer2, answer3):
+
+    counts = []
+    counts.append(CountSearchResults(GoogleSearch(question + " " + answer1)))
+    counts.append(CountSearchResults(GoogleSearch(question + " " + answer2)))
+    counts.append(CountSearchResults(GoogleSearch(question + " " + answer3)))
+
+    return counts
 
 
-print (CountSearchResults(GoogleSearch("tin cans")))
-print (CountSearchResults(GoogleSearchInQuotes("tin cans")))
+# returns normalized array of search result counts for the 3 question/answer combos
+# arg: question, answer1, answer2, answer3 are all strings
+def CountNormalizedQuestionAnswerResults(question, answer1, answer2, answer3):
 
+    counts = CountQuestionAnswerResults(question, answer1, answer2, answer3)
+    counts[0] /= CountSearchResults(GoogleSearch(answer1))
+    counts[1] /= CountSearchResults(GoogleSearch(answer2))
+    counts[2] /= CountSearchResults(GoogleSearch(answer3))
+
+    return counts
+
+# returns array of search result counts for the 3 question/answer combos and normalized counts
+# arg: question, answer1, answer2, answer3 are all strings
+def CountBothQuestionAnswerResults(question, answer1, answer2, answer3):
+
+    counts = CountQuestionAnswerResults(question, answer1, answer2, answer3)
+    counts.append(counts[0] / CountSearchResults(GoogleSearch(answer1)))
+    counts.append(counts[1] / CountSearchResults(GoogleSearch(answer2)))
+    counts.append(counts[2] / CountSearchResults(GoogleSearch(answer3)))
+
+    return counts
+
+
+### MAIN ###
+
+
+
+question = "Who was the third president of the United States?"
+answer1 = "Abraham Lincoln"
+answer2 = "Thomas Jefferson"
+answer3 = "George Washington"
+
+start_time = time.time()
+
+#counts = CountQuestionAnswerResults(question, answer1, answer2, answer3)
+#normalized_counts = CountNormalizedQuestionAnswerResults(question, answer1, answer2, answer3)
+counts = CountBothQuestionAnswerResults(question, answer1, answer2, answer3)
+normalized_counts = []
+normalized_counts.append(counts[3])
+normalized_counts.append(counts[4])
+normalized_counts.append(counts[5])
+
+print (question)
+print ("---Search Counts---")
+print (answer1 + ": " + str(counts[0]))
+print (answer2 + ": " + str(counts[1]))
+print (answer3 + ": " + str(counts[2]))
+print ("---Normalized Search Counts---")
+print (answer1 + ": " + str(normalized_counts[0]))
+print (answer2 + ": " + str(normalized_counts[1]))
+print (answer3 + ": " + str(normalized_counts[2]))
+print ("Lookup took " + str(time.time() - start_time) + " seconds.")
